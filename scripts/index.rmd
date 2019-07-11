@@ -1,0 +1,47 @@
+---
+title: "Bayesian Modelling on CpG Dinucleotide Frequency Among Different Hosts on the Genomes of Coronavirus"
+author: "Haogao Gu"
+date: "7/11/2019"
+output: html_document
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, cache=TRUE, autodep = TRUE)
+```
+## Understand the problem
+CpG dinucleotide is significantly under-represented in the genomes of many RNA viruses, including Coronavirus. In this project, we planned to investigate the distributions of CpG dinucleotide frequency in coronavirus of differnt host, by bayesian hierarchical modelling. 
+
+## Collection of relevant data
+The CDS fasta sequences were retrieved at 2019-07-09 11:45 at this [link](https://www.viprbrc.org/brc/vipr_genome_search.spg?method=ShowCleanSearch&decorator=corona) (ticket 71698491902).
+
+All the 86013 sequences with naming scheme "GenBank Accession | Strain Name | Segment | Date | Host | Country | Subtype | Virus Species" were downloaded.
+
+## Explore and clean the data
+First we load the data into R.
+
+```{r, message=FALSE}
+library(Biostrings)
+data <- readDNAStringSet("../data/71698491902-CdsFastaResults.fasta")
+```
+Take an overview on the data and do some data cleaning.
+
+```{r, results='hide'}
+# we remove replicated sequneces by accession number.
+sum(duplicated(names(data)))/length(data) # 67% of the raw data will be removed
+data <- data[!duplicated(names(data))]
+
+# the length of the sequences should be over 3000nt.
+sum(width(data) <= 3000)/length(data) # 91% of the above data will be removed
+data <- data[width(data) > 3000] # 2424 sequneces remained.
+
+check_nsb <- lapply(data, function(x){ # check non-standard bases in the sequneces
+    sum(alphabetFrequency(x)[5:18]) > 0
+})
+data <- data[!unlist(check_nsb)] # keep only sequnece with standard bases. 
+```
+```{r}
+data # Overview of the remaining data. 2423 seqs remained for modelling.
+```
+## Postulate a model
+## Fit the model
+## Check the model
+## Use the model

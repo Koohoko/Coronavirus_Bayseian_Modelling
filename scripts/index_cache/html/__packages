@@ -1,0 +1,7 @@
+base
+BiocGenerics
+S4Vectors
+IRanges
+XVector
+Biostrings
+rmarkdown
