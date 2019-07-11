@@ -9,3 +9,6 @@ All available sequences were downloaded.
 
 ### Data cleaning
 Check for duplicate names, inspect the metadata.
+
+### Data analysis and result
+Please refer to the results folder
