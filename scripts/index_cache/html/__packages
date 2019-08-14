@@ -5,3 +5,15 @@ IRanges
 XVector
 Biostrings
 rmarkdown
+tidyverse
+ggplot2
+tibble
+tidyr
+readr
+purrr
+dplyr
+stringr
+forcats
+SynMut
+coda
+rjags

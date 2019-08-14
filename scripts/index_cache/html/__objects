@@ -1,3 +1,7 @@
-unnamed-chunk-1	data
-unnamed-chunk-2	check_nsb	data
+unnamed-chunk-1	
+unnamed-chunk-2	
 unnamed-chunk-3	
+unnamed-chunk-4	alpha_s	beta_s	mean_s	pm_params	resid	yhat
+setup	
+unnamed-chunk-5	alpha_rscu_pred	beta_rscu_pred	n_sim
+unnamed-chunk-6	alpha_rscu_pred	beta_rscu_pred	n_sim

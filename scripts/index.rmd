@@ -1,47 +1,131 @@
 ---
-title: "Bayesian Modelling on CpG Dinucleotide Frequency Among Different Hosts on the Genomes of Coronavirus"
+title: "Bayesian Modelling on Codon Usage Among Different Virus Genus of Coronavirus"
 author: "Haogao Gu"
-date: "7/11/2019"
+date: "14/08/2019"
 output: html_document
 ---
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE, cache=TRUE, autodep = TRUE)
 ```
 ## Understand the problem
-CpG dinucleotide is significantly under-represented in the genomes of many RNA viruses, including Coronavirus. In this project, we planned to investigate the distributions of CpG dinucleotide frequency in coronavirus of differnt host, by bayesian hierarchical modelling. 
+Codon usage is a famous genomic signature for many RNA viruses, including
+Coronavirus. In this project, we planned to investigate the distributions of 
+the Relative Synonymous Codon Usage (rscu) of a specific codon
+in coronavirus of differnt virus genes, by bayesian hierarchical modelling.
 
-## Collection of relevant data
-The CDS fasta sequences were retrieved at 2019-07-09 11:45 at this [link](https://www.viprbrc.org/brc/vipr_genome_search.spg?method=ShowCleanSearch&decorator=corona) (ticket 71698491902).
+## Collection of relevant data 
+The CDS fasta sequences were retrieved from public database. Necessary data 
+cleaning were performed (details not shown).
 
-All the 86013 sequences with naming scheme "GenBank Accession | Strain Name | Segment | Date | Host | Country | Subtype | Virus Species" were downloaded.
+## Explore the data
+After some initial data cleaning, we get the data suitable for fitting a model.
+First we would take a overview of the data.
 
-## Explore and clean the data
-First we load the data into R.
-
-```{r, message=FALSE}
-library(Biostrings)
-data <- readDNAStringSet("../data/71698491902-CdsFastaResults.fasta")
+#### Distributions of the codon usage by different virus genus
+We use the Relative Synonymous Codon Usage (RSCU) as a method to estimate the
+codon usage bias.
+```{r, fig.height = 10, fig.width = 16, message=FALSE, warning=FALSE}
+ggplot(df_tmp) + 
+    geom_boxplot(aes(x = codon, y = RSCU, fill = AA, color = AA),
+                 outlier.size = 0.1, outlier.alpha = 0.2)+
+    facet_grid(vars(`Virus Genus`),vars(AA),scales = "free")+
+    theme(axis.text.x = element_text(angle = 90))
 ```
-Take an overview on the data and do some data cleaning.
 
-```{r, results='hide'}
-# we remove replicated sequneces by accession number.
-sum(duplicated(names(data)))/length(data) # 67% of the raw data will be removed
-data <- data[!duplicated(names(data))]
-
-# the length of the sequences should be over 3000nt.
-sum(width(data) <= 3000)/length(data) # 91% of the above data will be removed
-data <- data[width(data) > 3000] # 2424 sequneces remained.
-
-check_nsb <- lapply(data, function(x){ # check non-standard bases in the sequneces
-    sum(alphabetFrequency(x)[5:18]) > 0
-})
-data <- data[!unlist(check_nsb)] # keep only sequnece with standard bases. 
+We observed that the distributions of RSCU may vary among different groups for 
+the TTT codon. like what is shown in the density plot below:
+```{r, fig.height = 10, fig.width = 16, message=FALSE, warning=FALSE}
+ggplot(subset(df_tmp, codon == "TTT")) +
+    geom_histogram(aes(x = RSCU, y = ..density.., fill = `Virus Genus`))+
+    facet_wrap(vars(`Virus Genus`))
 ```
-```{r}
-data # Overview of the remaining data. 2423 seqs remained for modelling.
-```
+
 ## Postulate a model
+We assumed that And the RSCU values for each group come from individual gamma
+distribution with its own alpha and beta coefficients. And the alpha and beta of
+the distributions for different groups (virus genuses) come from two different
+normal distributions with different mean and variance. Thus we can build a
+hierarchical model basing on these data.
+
+
 ## Fit the model
+```{r, eval=FALSE}
+library(rjags)
+df_jags <- subset(df_tmp, codon == "TTT")
+df_jags$group_values <- as.numeric(factor(df_jags$`Virus Genus`))
+
+mod_string = " model {
+for (i in 1:length(RSCU)) {
+  RSCU[i] ~ dgamma(alpha[group_values[i]], beta[group_values[i]])
+}
+
+for (j in 1:max(group_values)) {
+  alpha[j] ~ dnorm(theta1, 1/sigma1)
+  beta[j] ~ dnorm(theta2, 1/sigma2)
+}
+
+theta1 ~ dnorm(1.0, 1/100)
+theta2 ~ dnorm(1.0, 1/100)
+
+sigma1 ~ dexp(1.0)
+sigma2 ~ dexp(1.0)
+
+} "
+
+set.seed(2019)
+
+data_jags = as.list(df_jags)
+
+params = c("alpha", "beta", "theta1", "theta2", "sigma1", "sigma2")
+
+mod = jags.model(textConnection(mod_string), data=data_jags, n.chains=3)
+update(mod, 1e3)
+
+mod_sim = coda.samples(model=mod,
+                       variable.names=params,
+                       n.iter=5e5)
+mod_csim = as.mcmc(do.call(rbind, mod_sim))
+
+## convergence diagnostics
+plot(mod_sim)
+
+gelman.diag(mod_sim)
+autocorr.diag(mod_sim)
+autocorr.plot(mod_sim)
+effectiveSize(mod_sim)
+
+```
+
 ## Check the model
+```{r}
+## check the effective sample size
+effectiveSize(mod_sim)
+
+## observation level residuals
+(pm_params = colMeans(mod_csim))
+
+alpha_s <- pm_params[1:4]
+beta_s <- pm_params[5:8]
+mean_s <- pm_params[1:4]/pm_params[5:8]
+yhat = mean_s[data_jags$group_values]
+resid = data_jags$RSCU - yhat
+plot(resid)
+
+plot(jitter(yhat), resid)
+```
+
 ## Use the model
+
+#### we can check the posterior probability that the RSCU values for the 
+Alphacoronavirus is greater than the RSCU values for the Betacoronavirus
+```{r}
+n_sim <- nrow(mod_csim)
+set.seed(2019)
+alpha_rscu_pred <- rgamma(n_sim,mod_csim[,1], mod_csim[,5])
+beta_rscu_pred <- rgamma(n_sim,mod_csim[,2], mod_csim[,6])
+
+mean(alpha_rscu_pred > beta_rscu_pred)
+```
+The posterior probability is 0.384.
+
+***

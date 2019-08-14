@@ -1,3 +1,7 @@
-unnamed-chunk-1	library	readDNAStringSet
-unnamed-chunk-2	!	<=	>	alphabetFrequency	duplicated	lapply	length	names	sum	unlist	width
-unnamed-chunk-3	data
+unnamed-chunk-1	AA	aes	codon	df_tmp	element_text	facet_grid	geom_boxplot	ggplot	RSCU	theme	vars	Virus Genus
+unnamed-chunk-2	..density..	==	aes	codon	df_tmp	facet_wrap	geom_histogram	ggplot	RSCU	subset	vars	Virus Genus
+unnamed-chunk-3	$	$<-	==	as.list	as.mcmc	as.numeric	autocorr.diag	autocorr.plot	c	coda.samples	codon	df_tmp	do.call	effectiveSize	factor	gelman.diag	jags.model	library	plot	rbind	set.seed	subset	textConnection	update
+unnamed-chunk-4	$	colMeans	data_jags	effectiveSize	jitter	mod_csim	mod_sim	plot
+setup	$	::
+unnamed-chunk-5	>	mean	mod_csim	nrow	rgamma	set.seed
+unnamed-chunk-6	>	mean	mod_csim	nrow	rgamma	set.seed
